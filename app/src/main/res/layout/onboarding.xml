@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="402dp"
+        android:layout_height="172dp"
+        android:layout_marginTop="110dp"
+        android:layout_marginBottom="16dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ru_store_logo_foreground"
+        app:layout_constraintBottom_toTopOf="@id/title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.444"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="0dp"
+        android:layout_height="74dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/vk_sans_display_demibold"
+        android:gravity="start"
+        android:text="Официальный магазин приложений для Android"
+        android:textColor="#000000"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/logo" />
+
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="383dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="41dp"
+        android:layout_marginEnd="8dp"
+        android:fontFamily="@font/vk_sans_display_regular"
+        android:gravity="start"
+        android:text="Безопасный доступ к популярным играм и приложениям"
+        android:textColor="#120F0F"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title" />
+
+    <Button
+        android:id="@+id/start_button"
+        android:layout_width="355dp"
+        android:layout_height="68dp"
+        android:layout_margin="30dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="156dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="84dp"
+        android:background="@drawable/button_background"
+        android:backgroundTint="@color/blue"
+        android:fontFamily="@font/vk_sans_display_demibold"
+        android:text="Перейти к витрине"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/subtitle" />
+</androidx.constraintlayout.widget.ConstraintLayout>

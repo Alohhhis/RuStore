@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.RuStore" parent="Theme.AppCompat.Light.NoActionBar">
+        <!--
+            Фикс "чёрного экрана" на старте:
+            Android рисует windowBackground до того, как Activity успеет отрисовать первый кадр.
+            Если фон темы тёмный/дефолтный, появляется чёрная "вспышка" при загрузке.
+         -->
+        <item name="android:windowBackground">@android:color/white</item>
+
+        <!-- Делает статус-бар читаемым на светлом фоне -->
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
