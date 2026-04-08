@@ -1,6 +1,6 @@
 ## RuStore (клиент)
 <a href="https://drive.google.com/file/d/1Lw4_borkK2MwKMYwPhS3D5QSylagtAgA/view?usp=drive_link">
-  <img src="Screen_recording_20260408_192822.webm_snapshot_00.01.503.jpg" width="30%">
+  <img src="Screen_recording_20260408_192822.webm_snapshot_00.01.503.jpg" width="10%">
 </a>
 
 ### Возможности
