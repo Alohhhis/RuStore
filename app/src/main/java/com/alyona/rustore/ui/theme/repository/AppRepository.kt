@@ -8,7 +8,6 @@ class AppRepository {
         return RetrofitInstance.api.getApps()
     }
 
-    // Фильтрация приложений по поисковому запросу
     suspend fun searchApps(query: String): List<ApplicationItem> {
         return getApps().filter { it.name.contains(query, ignoreCase = true) }
     }

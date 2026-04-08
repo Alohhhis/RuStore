@@ -11,7 +11,6 @@ class PackageInstallResultReceiver : BroadcastReceiver() {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
         Log.d("PackageInstall", "Install result: status=$status message=$message")
-        // Здесь можно расширить: показать уведомление/обновить UI через Store, если нужно.
     }
 }
 

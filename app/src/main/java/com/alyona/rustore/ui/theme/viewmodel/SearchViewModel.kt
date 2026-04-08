@@ -7,9 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// Состояния UI для поиска
-
-
 class SearchViewModel : ViewModel() {
 
     private val repository = AppRepository()
@@ -17,7 +14,6 @@ class SearchViewModel : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state
 
-    // Метод загрузки всех приложений (для Pull-to-Refresh и первой загрузки)
     fun loadApps() {
         _state.value = UiState.Loading
         viewModelScope.launch {
@@ -30,7 +26,6 @@ class SearchViewModel : ViewModel() {
         }
     }
 
-    // Метод поиска приложений по query
     fun searchApps(query: String) {
         _state.value = UiState.Loading
         viewModelScope.launch {

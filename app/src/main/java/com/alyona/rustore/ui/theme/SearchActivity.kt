@@ -8,7 +8,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Button
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -32,7 +31,7 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var errorStateView: ErrorStateView
 
     private val viewModel: SearchViewModel by viewModels()
-    private var allAppsList = listOf<ApplicationItem>() // теперь напрямую ApplicationItem
+    private var allAppsList = listOf<ApplicationItem>()
     private var popularAppsList = listOf<ApplicationItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +46,6 @@ class SearchActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         errorStateView = ErrorStateView(findViewById(R.id.error_state))
 
-        // Настройка адаптера — теперь AppsAdapter принимает ApplicationItem
         adapter = AppsAdapter(onClick = null)
         searchResults.layoutManager = LinearLayoutManager(this)
         searchResults.adapter = adapter
@@ -56,12 +54,10 @@ class SearchActivity : AppCompatActivity() {
 
         clearButton.setOnClickListener {
             searchInput.text.clear()
-            // По требованиям: при пустом запросе показываем популярные приложения
             adapter.submitList(popularAppsList)
             clearButton.visibility = ImageButton.GONE
         }
 
-        // Автофокус + автопоказ клавиатуры (как в ТЗ)
         searchInput.requestFocus()
         showKeyboard()
 
@@ -69,12 +65,10 @@ class SearchActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString().trim()
                 if (query.isEmpty()) {
-                    // Пустой запрос: показываем популярные приложения
                     adapter.submitList(popularAppsList)
                     clearButton.visibility = ImageButton.GONE
                 } else {
                     val filtered = allAppsList.filter { it.name.contains(query, ignoreCase = true) }
-                    // Пустой результат: показываем популярные приложения
                     adapter.submitList(if (filtered.isEmpty()) popularAppsList else filtered)
                     clearButton.visibility = ImageButton.VISIBLE
                 }
@@ -91,15 +85,12 @@ class SearchActivity : AppCompatActivity() {
             } else false
         }
 
-        // Кнопка "найти" делает то же самое, что IME_ACTION_SEARCH,
-        // и обязательно прячет клавиатуру (курсор пропадает).
         searchButton.setOnClickListener { runSearch() }
 
         swipeRefreshLayout.setOnRefreshListener {
             viewModel.loadApps()
         }
 
-        // Подписка на состояние ViewModel
         lifecycleScope.launchWhenStarted {
             viewModel.state.collect { state ->
                 when (state) {
@@ -111,17 +102,14 @@ class SearchActivity : AppCompatActivity() {
                         errorStateView.hide()
                         swipeRefreshLayout.isRefreshing = false
                         allAppsList = state.apps
-                        // "Популярные" — например, по рейтингу (если rating приходит с бэка)
                         popularAppsList = allAppsList
                             .sortedByDescending { it.rating }
                             .take(10)
 
-                        // По умолчанию (пока пользователь ничего не ввёл) — показываем популярные
                         val currentQuery = searchInput.text?.toString()?.trim().orEmpty()
                         if (currentQuery.isEmpty()) {
                             adapter.submitList(popularAppsList)
                         } else {
-                            // Если уже что-то введено — пересчитаем выдачу
                             runSearch()
                         }
                     }
@@ -146,16 +134,15 @@ class SearchActivity : AppCompatActivity() {
         }
         adapter.submitList(list)
 
-        // Требование: после поиска клавиатура скрывается, курсор пропадает.
         searchInput.clearFocus()
         hideKeyboard()
     }
 
     private fun showKeyboard() {
-        // Клавиатура может не открыться мгновенно в onCreate, поэтому делаем post().
         searchInput.post {
+            searchInput.requestFocus()
             val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(searchInput, InputMethodManager.SHOW_IMPLICIT)
+            imm.showSoftInput(searchInput, InputMethodManager.SHOW_FORCED)
         }
     }
 

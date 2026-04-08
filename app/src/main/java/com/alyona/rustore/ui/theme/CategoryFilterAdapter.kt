@@ -60,7 +60,6 @@ class CategoryFilterAdapter(
                 val isSelected = (selectedCategories.isEmpty() && item.categoryName == "Все приложения") ||
                         selectedCategories.contains(item.categoryName)
 
-                // Подставляем иконку в зависимости от состояния
                 holder.icon.setImageResource(
                     if (isSelected) item.iconResSelected else item.iconResUnselected
                 )
@@ -101,7 +100,6 @@ class CategoryFilterAdapter(
 
         selectedCategories = updated
 
-        // Логирование
         DebugLogger.log(
             runId = "initial",
             hypothesisId = "H_FILTER_SELECTION",

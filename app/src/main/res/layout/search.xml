@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@android:color/white">
 
-    <!-- Кнопка назад -->
     <ImageButton
         android:id="@+id/back_button"
         android:layout_width="48dp"
@@ -18,11 +17,11 @@
         android:layout_marginTop="45dp"
         />
 
-    <!-- Поле поиска -->
     <EditText
         android:id="@+id/search_input"
         android:layout_width="0dp"
         android:layout_height="48dp"
+        android:fontFamily="@font/vk_sans_display_regular"
         android:hint="Поиск приложений и игр"
         android:textColorHint="#A0A0A0"
         android:paddingStart="16dp"
@@ -34,7 +33,6 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="45dp"/>
 
-    <!-- Крестик очистки -->
     <ImageButton
         android:id="@+id/clear_button"
         android:layout_width="48dp"
@@ -45,20 +43,19 @@
         app:layout_constraintEnd_toStartOf="@id/search_button"
         app:layout_constraintTop_toTopOf="@id/search_input"/>
 
-    <!-- Кнопка найти -->
     <Button
         android:id="@+id/search_button"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:text="найти"
         android:backgroundTint="#007AFF"
+        android:fontFamily="@font/vk_sans_display_medium"
         android:textColor="@android:color/white"
         android:layout_marginTop="45dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginEnd="16dp"/>
 
-    <!-- Разделительная линия -->
     <View
         android:layout_width="0dp"
         android:layout_height="1dp"
@@ -67,7 +64,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Список результатов -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="0dp"

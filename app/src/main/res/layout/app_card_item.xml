@@ -43,24 +43,5 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/grey"
             android:textSize="14sp" />
-
-        <ProgressBar
-            android:id="@+id/download_progress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:layout_marginTop="8dp"
-            android:max="100"
-            android:progress="0"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/download_button"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/download_button"
-            android:text="Скачать"
-            android:textColor="@android:color/white" />
     </LinearLayout>
 </LinearLayout>

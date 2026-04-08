@@ -15,7 +15,6 @@ object RetrofitInstance {
 
     private val contentType = "application/json".toMediaType()
 
-    // --- Логгер для Retrofit / OkHttp ---
     private val logging = HttpLoggingInterceptor { message ->
         android.util.Log.d("RetrofitDebug", message)
     }.apply {
@@ -28,9 +27,8 @@ object RetrofitInstance {
 
     val api: AppApi by lazy {
         Retrofit.Builder()
-            // Для Android Emulator localhost хоста = 10.0.2.2
             .baseUrl(ApiConfig.BASE_URL)
-            .client(client) // теперь логгер подключен
+            .client(client)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(AppApi::class.java)

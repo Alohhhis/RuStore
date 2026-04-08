@@ -10,10 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import java.io.File
 
-/**
- * Отдельная Activity нужна, чтобы установка APK была user-initiated:
- * установка запускается только после явного клика по уведомлению/кнопке.
- */
 class InstallApkActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_APK_PATH = "apk_path"
@@ -42,7 +38,7 @@ class InstallApkActivity : AppCompatActivity() {
 
         val apkFile = File(apkPath)
         if (!apkFile.exists() || apkFile.length() <= 0L) {
-            Toast.makeText(this, "APK не найден на устройстве. Скачайте ещё раз.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Программа потерялась. Скачайте ещё раз.", Toast.LENGTH_LONG).show()
             finish()
             return
         }

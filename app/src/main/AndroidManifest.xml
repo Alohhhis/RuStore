@@ -2,13 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--
-        ВАЖНО: без INTERNET любая сеть падает с SocketException EPERM (Operation not permitted),
-        из-за чего RecyclerView остаётся пустым (данные не загружаются).
-     -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Полезно для диагностики/логики offline/online, но не критично -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -36,7 +31,10 @@
         </activity>
         <activity android:name=".ui.theme.AppStoreActivity" android:exported="false" />
         <activity android:name=".ui.theme.CategoriesActivity" android:exported="false" />
-        <activity android:name=".ui.theme.SearchActivity" android:exported="false" />
+        <activity
+            android:name=".ui.theme.SearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
         <activity android:name=".ui.theme.AppCardActivity" android:exported="false" />
 
         <service

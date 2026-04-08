@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@android:color/white">
 
-    <!-- Логотип -->
     <ImageView
         android:id="@+id/logo"
         android:layout_width="48dp"
@@ -18,7 +17,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Поисковое поле -->
     <FrameLayout
         android:id="@+id/search_container"
         android:layout_width="0dp"
@@ -49,11 +47,11 @@
             android:layout_height="18dp"
             android:layout_gravity="end|center_vertical"
             android:layout_marginEnd="16dp"
+            android:fontFamily="@font/vk_sans_display_regular"
             android:contentDescription="Поиск"
             android:src="@drawable/search_icon_foreground" />
     </FrameLayout>
 
-    <!-- Заголовок -->
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
@@ -68,7 +66,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/logo" />
 
-    <!-- SwipeRefreshLayout оборачивает список категорий -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="0dp"

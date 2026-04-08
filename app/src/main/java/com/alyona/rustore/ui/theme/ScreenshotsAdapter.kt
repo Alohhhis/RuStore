@@ -9,7 +9,7 @@ import com.alyona.rustore.ui.theme.network.ApiConfig
 import com.bumptech.glide.Glide
 
 class ScreenshotsAdapter(
-    private val screenshots: List<String>, // теперь URL
+    private val screenshots: List<String>,
     private val onClick: (Int) -> Unit
 ) : RecyclerView.Adapter<ScreenshotsAdapter.ViewHolder>() {
 

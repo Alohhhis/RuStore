@@ -13,7 +13,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.alyona.rustore.R
 import com.alyona.rustore.ui.theme.viewmodel.AppStoreViewModel
 import com.alyona.rustore.ui.theme.viewmodel.UiState
-import com.alyona.rustore.ui.theme.service.DownloadTaskStore
 import com.alyona.rustore.ui.theme.util.ErrorStateView
 import kotlinx.coroutines.launch
 
@@ -36,20 +35,15 @@ class AppStoreActivity : AppCompatActivity() {
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         errorStateView = ErrorStateView(findViewById(R.id.error_state))
 
-        // Если пришли с CategoriesActivity (клик по категории) — применяем стартовый фильтр.
         initialCategoryFilter = intent.getStringExtra("CATEGORY_FILTER")
 
-        // Настройка логотипа и поиска
         logo.setOnClickListener { finish() }
-        // Поле в шапке здесь выступает как "кнопка перехода" на экран поиска.
         searchInput.isFocusable = false
         searchInput.isFocusableInTouchMode = false
         searchInput.setOnClickListener {
             startActivity(android.content.Intent(this, SearchActivity::class.java))
         }
 
-        // Категории-пилюли: мультивыбор как чекбоксы + "Все приложения" сбрасывает выбор.
-        // Последний элемент — кнопка "Ко всем категориям" (переход в CategoriesActivity).
         val categoryItems = listOf(
             CategoryFilterAdapter.UiItem.Chip(
                 categoryName = "Все приложения",
@@ -107,17 +101,14 @@ class AppStoreActivity : AppCompatActivity() {
         categoriesRecycler.adapter = categoryFilterAdapter
         CategoryFilterAdapter.attachItemSpacing(categoriesRecycler, spacingDp = 8)
 
-        // Настройка списка приложений
         appsAdapter = AppsAdapter()
         appsRecycler.layoutManager = LinearLayoutManager(this)
         appsRecycler.adapter = appsAdapter
 
-        // Pull-to-Refresh
         swipeRefreshLayout.setOnRefreshListener {
             viewModel.loadApps()
         }
 
-        // Подписка на состояние ViewModel
         lifecycleScope.launchWhenStarted {
             viewModel.state.collect { state ->
                 when (state) {
@@ -131,8 +122,6 @@ class AppStoreActivity : AppCompatActivity() {
                         Log.d("AppDebug", "Received apps: ${state.apps.map { it.name }}")
                         appsAdapter.submitList(state.apps)
 
-                        // ВАЖНО: если Activity открыта с предвыбранной категорией,
-                        // применяем фильтр после получения данных.
                         if (!initialSelected.isEmpty()) {
                             appsAdapter.filterByCategories(initialSelected)
                         }
@@ -146,14 +135,6 @@ class AppStoreActivity : AppCompatActivity() {
             }
         }
 
-        // Подписка на прогресс задач скачивания (для кнопки/прогресса в карточках списка)
-        lifecycleScope.launchWhenStarted {
-            DownloadTaskStore.states.collect { states ->
-                appsAdapter.submitDownloadStates(states)
-            }
-        }
-
-        // Начальная загрузка данных
         viewModel.loadApps()
     }
 }

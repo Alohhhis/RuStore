@@ -16,12 +16,11 @@ class AppStoreViewModel : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state
 
-    // Метод загрузки приложений
     fun loadApps() {
         _state.value = UiState.Loading
         viewModelScope.launch {
             try {
-                val apps = repository.getApps() // запрос к API
+                val apps = repository.getApps()
                 _state.value = UiState.Success(apps)
             } catch (e: Exception) {
                 Log.e("AppDebug", "Retrofit exception", e)

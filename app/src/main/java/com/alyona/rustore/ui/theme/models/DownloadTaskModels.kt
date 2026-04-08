@@ -25,7 +25,6 @@ data class TaskStatusDto(
 
 @Serializable
 data class TaskResultDto(
-    // бэк может вернуть либо "resultUrl", либо "apkPath"
     @SerialName("resultUrl") val resultUrl: String? = null,
     @SerialName("apkPath") val apkPath: String? = null,
 )

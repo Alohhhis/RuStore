@@ -13,6 +13,7 @@
         android:id="@+id/error_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/vk_sans_display_bold"
         android:text="Что-то пошло не так"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -23,6 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:fontFamily="@font/vk_sans_display_demibold"
         android:text="Проверьте интернет и попробуйте снова"
         android:textColor="#666666" />
 
@@ -31,6 +33,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:fontFamily="@font/vk_sans_display_regular"
         android:text="Повторить" />
 
 </LinearLayout>

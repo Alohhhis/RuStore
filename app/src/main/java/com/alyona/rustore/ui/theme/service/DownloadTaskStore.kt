@@ -11,6 +11,7 @@ data class DownloadUiState(
     val progress: Int,
     val resultUrl: String? = null,
     val localApkPath: String? = null,
+    val packageName: String? = null,
     val errorMessage: String? = null,
 )
 

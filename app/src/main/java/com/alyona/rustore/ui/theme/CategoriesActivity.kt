@@ -50,25 +50,22 @@ class CategoriesActivity : AppCompatActivity() {
             startActivity(Intent(this, SearchActivity::class.java))
         }
 
-        // Настройка RecyclerView
         categoriesAdapter = CategoriesAdapter(
             context = this,
             categories = categories,
-            allApps = emptyList() // пусто пока данные не загрузились
+            allApps = emptyList()
         )
         categoriesRecycler.adapter = categoriesAdapter
         categoriesRecycler.layoutManager = LinearLayoutManager(this)
 
-        // Подписка на данные
         lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        is UiState.Loading -> { /* здесь можно показать прогресс */ }
+                        is UiState.Loading -> {}
                         is UiState.Success -> {
                             allApps = state.apps
 
-                            // Обновляем адаптер
                             categoriesAdapter.allApps = allApps
                             categoriesAdapter.updateCounts()
                         }
@@ -80,7 +77,6 @@ class CategoriesActivity : AppCompatActivity() {
             }
         }
 
-        // Загрузка приложений
         viewModel.loadApps()
     }
 }

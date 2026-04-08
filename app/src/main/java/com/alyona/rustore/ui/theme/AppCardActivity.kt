@@ -8,25 +8,32 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.alyona.rustore.R
 import com.alyona.rustore.ui.theme.models.ApplicationItem
 import com.alyona.rustore.ui.theme.service.ApkDownloadService
+import com.alyona.rustore.ui.theme.service.DownloadTaskStore
 import com.bumptech.glide.Glide
 import kotlinx.serialization.json.Json
 import com.alyona.rustore.ui.theme.network.ApiConfig
+import com.alyona.rustore.ui.theme.util.InstalledApps
 import com.alyona.rustore.ui.theme.util.NotificationPermission
+import kotlinx.coroutines.launch
 
 class AppCardActivity : AppCompatActivity() {
 
     private lateinit var longDescription: TextView
     private lateinit var readMoreButton: Button
+    private lateinit var installProgress: ProgressBar
     private var isExpanded = false
     private var pendingStartIntent: Intent? = null
+    private var currentApp: ApplicationItem? = null
 
     private val requestNotificationsPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
@@ -38,13 +45,13 @@ class AppCardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.app_card)
 
-        // --- UI элементы ---
         val appName: TextView = findViewById(R.id.app_name)
         val appShortDescription: TextView = findViewById(R.id.app_short_description)
         val appDeveloper: TextView = findViewById(R.id.app_developer)
         val appAge: TextView = findViewById(R.id.app_age)
         val appIcon: ImageView = findViewById(R.id.app_icon)
         val installButton: Button = findViewById(R.id.install_button)
+        installProgress = findViewById(R.id.install_progress)
         val logo: ImageView = findViewById(R.id.logo)
         val searchInput: EditText = findViewById(R.id.search_input)
         val searchContainer: View = findViewById(R.id.search_container)
@@ -53,15 +60,14 @@ class AppCardActivity : AppCompatActivity() {
         longDescription = findViewById(R.id.app_long_description)
         readMoreButton = findViewById(R.id.read_more_button)
 
-        // --- Получаем объект ApplicationItem из Intent ---
         val appJson = intent.getStringExtra("APP_ITEM_JSON")
         val appItem: ApplicationItem = if (appJson != null) {
             Json.decodeFromString(appJson)
         } else {
             finish(); return
         }
+        currentApp = appItem
 
-        // --- Заполняем UI ---
         appName.text = appItem.name
         appShortDescription.text = appItem.shortDescription
         appDeveloper.text = appItem.developer
@@ -76,14 +82,13 @@ class AppCardActivity : AppCompatActivity() {
             .placeholder(R.drawable.mini_logo_foreground)
             .into(appIcon)
 
-        // --- "Читать дальше / Свернуть" ---
+            //TODO написать большое описание!!
         readMoreButton.setOnClickListener {
             isExpanded = !isExpanded
             longDescription.maxLines = if (isExpanded) Int.MAX_VALUE else 4
             readMoreButton.text = if (isExpanded) "Свернуть" else "Читать дальше"
         }
 
-        // --- Поиск ---
         searchInput.isFocusable = false
         searchInput.isFocusableInTouchMode = false
         searchInput.setOnClickListener {
@@ -95,12 +100,21 @@ class AppCardActivity : AppCompatActivity() {
         }
         searchContainer.setOnClickListener { searchInput.performClick() }
 
-        // --- Кнопка установки APK ---
         installButton.setOnClickListener {
+            val app = currentApp ?: return@setOnClickListener
+
+            val pkg = DownloadTaskStore.states.value[app.id]?.packageName
+            if (!pkg.isNullOrBlank() && InstalledApps.isInstalled(this, pkg)) {
+                installButton.text = "Установлено"
+                installButton.isEnabled = false
+                installProgress.visibility = View.GONE
+                return@setOnClickListener
+            }
+
             val startIntent = Intent(this, ApkDownloadService::class.java).apply {
-                putExtra(ApkDownloadService.EXTRA_APP_ID, appItem.id)
-                putExtra(ApkDownloadService.EXTRA_APP_NAME, appItem.name)
-                putExtra(ApkDownloadService.EXTRA_APK_URL, ApiConfig.absoluteUrl(appItem.apkUrl))
+                putExtra(ApkDownloadService.EXTRA_APP_ID, app.id)
+                putExtra(ApkDownloadService.EXTRA_APP_NAME, app.name)
+                putExtra(ApkDownloadService.EXTRA_APK_URL, ApiConfig.absoluteUrl(app.apkUrl))
             }
 
             if (!NotificationPermission.isGranted(this)) {
@@ -111,21 +125,55 @@ class AppCardActivity : AppCompatActivity() {
             }
         }
 
-        // --- Категории приложения ---
         val categoryIconRes = getCategoryIcon(appItem.category)
         val categoryList = listOf(AppCardCategoryAdapter.CategoryItem(appItem.category, categoryIconRes))
         categoriesList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         categoriesList.adapter = AppCardCategoryAdapter(this, categoryList)
 
-        // --- Скриншоты ---
         screenshotsList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         screenshotsList.adapter = ScreenshotsAdapter(appItem.screenshots) { clickedIndex ->
             val dialog = ScreenshotDialogFragment(appItem.screenshots, clickedIndex)
             dialog.show(supportFragmentManager, "screenshots")
         }
 
-        // --- Логотип закрывает экран ---
         logo.setOnClickListener { finish() }
+
+        lifecycleScope.launch {
+            DownloadTaskStore.states.collect { map ->
+                val app = currentApp ?: return@collect
+                val st = map[app.id]
+                if (st == null) {
+                    installProgress.visibility = View.GONE
+                    installButton.isEnabled = true
+                    installButton.text = "Установить"
+                    return@collect
+                }
+
+                when (st.status) {
+                    "pending", "downloading" -> {
+                        installProgress.visibility = View.VISIBLE
+                        installProgress.progress = st.progress.coerceIn(0, 100)
+                        installButton.isEnabled = false
+                        installButton.text = "Загрузка…"
+                    }
+                    "installing" -> {
+                        installProgress.visibility = View.GONE
+                        installButton.isEnabled = false
+                        installButton.text = "Установка…"
+                    }
+                    "failed" -> {
+                        installProgress.visibility = View.GONE
+                        installButton.isEnabled = true
+                        installButton.text = "Повторить"
+                    }
+                    else -> {
+                        installProgress.visibility = View.GONE
+                        installButton.isEnabled = false
+                        installButton.text = "Установка…"
+                    }
+                }
+            }
+        }
     }
 
     private fun updateReadMoreVisibility() {
@@ -148,6 +196,20 @@ class AppCardActivity : AppCompatActivity() {
             startForegroundService(intent)
         } else {
             startService(intent)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val app = currentApp ?: return
+        val st = DownloadTaskStore.states.value[app.id]
+        val pkg = st?.packageName
+        if (!pkg.isNullOrBlank() && InstalledApps.isInstalled(this, pkg)) {
+            val btn: Button = findViewById(R.id.install_button)
+            val pb: ProgressBar = findViewById(R.id.install_progress)
+            pb.visibility = View.GONE
+            btn.text = "Установлено"
+            btn.isEnabled = false
         }
     }
 }

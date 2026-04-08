@@ -31,6 +31,7 @@ class ApkDownloadService : Service() {
 
     @Volatile
     private var currentTaskId: String? = null
+
     @Volatile
     private var currentAppId: Int? = null
 
@@ -101,8 +102,7 @@ class ApkDownloadService : Service() {
                 content = "Подготовка...",
                 progress = null,
                 appId = appId,
-                taskId = null,
-                localApkPath = null
+                taskId = null
 
             )
         )
@@ -115,126 +115,152 @@ class ApkDownloadService : Service() {
         return START_STICKY
     }
 
-    private suspend fun runDownloadFlow(appId: Int, appName: String, apkUrl: String) = coroutineScope {
-        try {
-            val created = RetrofitInstance.api.createDownloadTask(
-                DownloadTaskCreateRequest(
-                    appId = appId,
-                    apkUrl = apkUrl
+    private suspend fun runDownloadFlow(appId: Int, appName: String, apkUrl: String) =
+        coroutineScope {
+            try {
+                val created = RetrofitInstance.api.createDownloadTask(
+                    DownloadTaskCreateRequest(
+                        appId = appId,
+                        apkUrl = apkUrl
+                    )
                 )
-            )
-            currentTaskId = created.taskId
+                currentTaskId = created.taskId
 
-            DownloadTaskStore.upsert(
-                DownloadUiState(
-                    appId = appId,
-                    taskId = created.taskId,
-                    status = "pending",
-                    progress = 0
-                )
-            )
-
-            val start = SystemClock.elapsedRealtime()
-
-            while (currentCoroutineContext().isActive) {
-                val status = RetrofitInstance.api.getTaskStatus(created.taskId)
                 DownloadTaskStore.upsert(
                     DownloadUiState(
                         appId = appId,
                         taskId = created.taskId,
-                        status = status.status,
-                        progress = status.progress,
-                        resultUrl = status.resultUrl
+                        status = "pending",
+                        progress = 0
+                    )
+                )
+
+                val start = SystemClock.elapsedRealtime()
+
+                while (currentCoroutineContext().isActive) {
+                    val status = RetrofitInstance.api.getTaskStatus(created.taskId)
+                    DownloadTaskStore.upsert(
+                        DownloadUiState(
+                            appId = appId,
+                            taskId = created.taskId,
+                            status = status.status,
+                            progress = status.progress,
+                            resultUrl = status.resultUrl
+                        )
+                    )
+
+                    buildAndNotify(
+                        appName = appName,
+                        content = when (status.status) {
+                            "completed" -> "Загрузка на сервере завершена"
+                            "failed" -> "Ошибка на сервере"
+                            "canceled" -> "Отменено"
+                            else -> "Загрузка: ${status.progress}%"
+                        },
+                        progress = if (status.status == "downloading" || status.status == "pending") status.progress else null,
+                        appId = appId,
+                        taskId = created.taskId
+                    )
+
+                    when (status.status) {
+                        "completed" -> break
+                        "failed", "canceled" -> return@coroutineScope
+                    }
+
+                    val elapsed = SystemClock.elapsedRealtime() - start
+                    val delayMs = when {
+                        elapsed < 5_000 -> 900L
+                        elapsed < 30_000 -> 1300L
+                        else -> 2000L
+                    }
+                    delay(delayMs)
+                }
+                    //Господи спаси, сохрани...
+
+                val result = RetrofitInstance.api.getTaskResult(created.taskId)
+                val rawPath = result.resultUrl ?: result.apkPath
+                ?: RetrofitInstance.api.getTaskStatus(created.taskId).resultUrl
+                val resultUrl = rawPath?.let { normalizeResultPathToUrl(it) }
+                if (resultUrl.isNullOrBlank()) {
+                    DownloadTaskStore.upsert(
+                        DownloadUiState(
+                            appId = appId,
+                            taskId = created.taskId,
+                            status = "failed",
+                            progress = 100,
+                            errorMessage = "Путь к APK не пришёл"
+                        )
+                    )
+                    return@coroutineScope
+                }
+
+                val apkFile = downloadResultApk(
+                    url = ApiConfig.absoluteUrl(resultUrl),
+                    fileName = "${sanitizeFileName(appName)}.apk"
+                )
+
+                val apkPackageName =
+                    packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0)?.packageName
+
+                DownloadTaskStore.upsert(
+                    DownloadUiState(
+                        appId = appId,
+                        taskId = created.taskId,
+                        status = "apk_downloaded",
+                        progress = 100,
+                        resultUrl = resultUrl,
+                        localApkPath = apkFile.absolutePath,
+                        packageName = apkPackageName
+                    )
+                )
+
+                DownloadTaskStore.upsert(
+                    DownloadUiState(
+                        appId = appId,
+                        taskId = created.taskId,
+                        status = "installing",
+                        progress = 100,
+                        resultUrl = resultUrl,
+                        localApkPath = apkFile.absolutePath,
+                        packageName = apkPackageName
                     )
                 )
 
                 buildAndNotify(
                     appName = appName,
-                    content = when (status.status) {
-                        "completed" -> "Загрузка на сервере завершена"
-                        "failed" -> "Ошибка на сервере"
-                        "canceled" -> "Отменено"
-                        else -> "Загрузка: ${status.progress}%"
-                    },
-                    progress = if (status.status == "downloading" || status.status == "pending") status.progress else null,
+                    content = "Открываем установку…",
+                    progress = null,
                     appId = appId,
                     taskId = created.taskId
                 )
 
-                when (status.status) {
-                    "completed" -> break
-                    "failed", "canceled" -> return@coroutineScope
-                }
+                this@ApkDownloadService.startActivity(
+                    Intent(this@ApkDownloadService, InstallApkActivity::class.java).apply {
+                        putExtra(InstallApkActivity.EXTRA_APK_PATH, apkFile.absolutePath)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
 
-                val elapsed = SystemClock.elapsedRealtime() - start
-                val delayMs = if (elapsed < 10_000) 700L else 1200L
-                delay(delayMs)
-            }
-
-            val result = RetrofitInstance.api.getTaskResult(created.taskId)
-            val rawPath = result.resultUrl ?: result.apkPath ?: RetrofitInstance.api.getTaskStatus(created.taskId).resultUrl
-            val resultUrl = rawPath?.let { normalizeResultPathToUrl(it) }
-            if (resultUrl.isNullOrBlank()) {
+            } catch (e: Exception) {
+                val taskId = currentTaskId ?: ""
                 DownloadTaskStore.upsert(
                     DownloadUiState(
                         appId = appId,
-                        taskId = created.taskId,
+                        taskId = taskId,
                         status = "failed",
-                        progress = 100,
-                        errorMessage = "Путь к APK не пришёл"
+                        progress = 0,
+                        errorMessage = e.message
                     )
                 )
-                return@coroutineScope
+                buildAndNotify(
+                    appName = appName,
+                    content = "Ошибка: ${e.message ?: "неизвестно"}",
+                    progress = null,
+                    appId = appId,
+                    taskId = taskId
+                )
             }
-
-            val apkFile = downloadResultApk(
-                url = ApiConfig.absoluteUrl(resultUrl),
-                fileName = "${sanitizeFileName(appName)}.apk"
-            )
-
-            DownloadTaskStore.upsert(
-                DownloadUiState(
-                    appId = appId,
-                    taskId = created.taskId,
-                    status = "apk_downloaded",
-                    progress = 100,
-                    resultUrl = resultUrl,
-                    localApkPath = apkFile.absolutePath
-                )
-            )
-
-            // ВАЖНО: установка должна быть user-initiated.
-            // Поэтому после скачивания только показываем действие "Установить".
-            buildAndNotify(
-                appName = appName,
-                content = "APK скачан. Нажмите «Установить».",
-                progress = null,
-                appId = appId,
-                taskId = created.taskId,
-                localApkPath = apkFile.absolutePath
-            )
-
-        } catch (e: Exception) {
-            val taskId = currentTaskId ?: ""
-            DownloadTaskStore.upsert(
-                DownloadUiState(
-                    appId = appId,
-                    taskId = taskId,
-                    status = "failed",
-                    progress = 0,
-                    errorMessage = e.message
-                )
-            )
-            buildAndNotify(
-                appName = appName,
-                content = "Ошибка: ${e.message ?: "неизвестно"}",
-                progress = null,
-                appId = appId,
-                taskId = taskId,
-                localApkPath = null
-            )
         }
-    }
 
     private fun sanitizeFileName(name: String): String =
         name.trim().replace(Regex("""[\\/:*?"<>|]"""), "_").ifBlank { "app" }
@@ -244,7 +270,7 @@ class ApkDownloadService : Service() {
         if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
         if (trimmed.startsWith("/")) return trimmed
 
-        // бек иногда может вернуть абсолютный путь ФС сервера ".../downloads/<id>.apk"
+
         val marker = "downloads"
         val idx = trimmed.lastIndexOf(marker)
         if (idx >= 0) {
@@ -252,27 +278,26 @@ class ApkDownloadService : Service() {
             return "/downloads/$tail"
         }
 
-        // иначе считаем, что это относительный путь внутри статики
         return "/downloads/$trimmed"
     }
 
-    private suspend fun downloadResultApk(url: String, fileName: String): File = withContext(Dispatchers.IO) {
-        val request = Request.Builder().url(url).get().build()
-        val response = okHttp.newCall(request).execute()
-        if (!response.isSuccessful) throw IllegalStateException("APK download failed: ${response.code}")
-        val body = response.body ?: throw IllegalStateException("Empty body")
+    private suspend fun downloadResultApk(url: String, fileName: String): File =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder().url(url).get().build()
+            val response = okHttp.newCall(request).execute()
+            if (!response.isSuccessful) throw IllegalStateException("APK download failed: ${response.code}")
+            val body = response.body ?: throw IllegalStateException("Empty body")
 
-        // ВАЖНО: кладём в filesDir/apk, чтобы FileProvider (files-path) гарантированно видел файл.
-        val apkDir = File(filesDir, "apk").apply { mkdirs() }
-        val outFile = File(apkDir, fileName)
+            val apkDir = File(filesDir, "apk").apply { mkdirs() }
+            val outFile = File(apkDir, fileName)
 
-        body.byteStream().use { input ->
-            FileOutputStream(outFile).use { output ->
-                input.copyTo(output)
+            body.byteStream().use { input ->
+                FileOutputStream(outFile).use { output ->
+                    input.copyTo(output)
+                }
             }
+            outFile
         }
-        outFile
-    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -286,7 +311,6 @@ class ApkDownloadService : Service() {
         }
     }
 
-    // безопасный вызов notify с проверкой разрешений
     private fun notifySafe(notificationId: Int, notification: Notification) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -297,7 +321,6 @@ class ApkDownloadService : Service() {
                 NotificationManagerCompat.from(this).notify(notificationId, notification)
             }
         } catch (_: SecurityException) {
-            // permission может быть отозвано пользователем — не падаем
         }
     }
 
@@ -307,7 +330,6 @@ class ApkDownloadService : Service() {
         progress: Int?,
         appId: Int,
         taskId: String?,
-        localApkPath: String?,
     ): Notification {
         val cancelIntent = Intent(this, ApkDownloadService::class.java).apply {
             action = ACTION_CANCEL
@@ -328,19 +350,6 @@ class ApkDownloadService : Service() {
             .setOnlyAlertOnce(true)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Отменить", cancelPending)
 
-        if (!localApkPath.isNullOrBlank()) {
-            val installIntent = Intent(this, InstallApkActivity::class.java).apply {
-                putExtra(InstallApkActivity.EXTRA_APK_PATH, localApkPath)
-            }
-            val installPending = PendingIntent.getActivity(
-                this,
-                1,
-                installIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(android.R.drawable.stat_sys_download_done, "Установить", installPending)
-        }
-
         if (progress != null) {
             builder.setProgress(100, progress.coerceIn(0, 100), false)
         } else {
@@ -356,9 +365,8 @@ class ApkDownloadService : Service() {
         progress: Int?,
         appId: Int,
         taskId: String?,
-        localApkPath: String? = null,
     ) {
-        val notification = buildNotification(appName, content, progress, appId, taskId, localApkPath)
+        val notification = buildNotification(appName, content, progress, appId, taskId)
         notifySafe(NOTIFICATION_ID, notification)
     }
 
