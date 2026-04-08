@@ -50,7 +50,7 @@
 
 ### Сервер
 
-Ссылка на репозиторий бэка: `https://github.com/Alohhhis/rustore-server`
+Ссылка на репозиторий бэка: https://github.com/Alohhhis/rustore-server
 
 ## Требования
 - JDK 17+
@@ -59,7 +59,7 @@
 ./gradlew build
 ./gradlew run
 \`\`\`
-Сервер: http://localhost:8080
+Сервер: `http://localhost:8080`
 
 ###  из IDE
 Откройте проект в IntelliJ IDEA, запустите `main` в `src/main/kotlin/Main.kt` и всё
