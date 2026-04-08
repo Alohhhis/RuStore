@@ -1,5 +1,5 @@
 ## RuStore (клиент)
-[![Watch the video](...)](https://drive.google.com/file/d/1Lw4_borkK2MwKMYwPhS3D5QSylagtAgA/view?usp=drive_link)
+[![Watch the video](Screen_recording_20260408_192822.webm_snapshot_00.01.503.jpg)](https://drive.google.com/file/d/1Lw4_borkK2MwKMYwPhS3D5QSylagtAgA/view?usp=drive_link)
 
 ### Возможности
 - Лента/каталог приложений с сервера (`GET /apps`)
